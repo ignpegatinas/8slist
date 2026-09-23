@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>8slist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0f13; --panel:#151820; --panel2:#1c202a; --line:#262b35;
+  --text:#e9ebef; --muted:#828a97; --accent:#5b8def; --unranked:#555b66;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100%;display:flex}
+h1,h2,h3,.brand,.navlink{font-family:'Space Grotesk',sans-serif}
+
+aside{width:220px;flex:none;background:var(--panel);border-right:1px solid var(--line);
+  padding:22px 16px;position:sticky;top:env(safe-area-inset-top,0px);align-self:flex-start;height:100vh}
+.brand{font-weight:700;font-size:19px;letter-spacing:.3px;margin-bottom:26px}
+.brand span{color:var(--accent)}
+nav{display:flex;flex-direction:column;gap:4px}
+.navlink{background:none;border:none;text-align:left;color:var(--muted);padding:9px 12px;border-radius:7px;
+  font-size:14px;font-weight:600;cursor:pointer;transition:background .15s,color .15s}
+.navlink:hover{color:var(--text)}
+.navlink.active{background:var(--panel2);color:var(--text)}
+#search{margin-top:20px;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--text);
+  padding:8px 10px;border-radius:7px;font-family:'JetBrains Mono',monospace;font-size:12px}
+#search:focus{outline:1px solid var(--accent)}
+
+main{flex:1;max-width:820px;margin:0 auto;padding:32px 24px 60px;width:100%}
+.view{display:none}
+.view.active{display:block}
+h2{font-size:20px;margin:0 0 4px}
+.subtitle{color:var(--muted);font-size:12.5px;margin:0 0 22px}
+
+.tier-row{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:7px;min-height:52px}
+.tier-label{width:52px;flex:none;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#0d0f13;text-align:center;line-height:1.1}
+.tier-body{background:var(--panel);flex:1;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 12px}
+.tier-body:empty::after{content:"sin jugadores";color:var(--muted);font-size:12px}
+
+.chip{display:flex;align-items:center;gap:7px;background:var(--panel2);border:1px solid var(--line);
+  border-radius:20px;padding:5px 12px 5px 5px;font-size:12.5px;cursor:pointer;transition:border-color .15s}
+.chip:hover{border-color:var(--accent)}
+.avatar{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;color:#0d0f13;flex:none}
+.chip .rating{color:var(--muted);font-size:11px;border-left:1px solid var(--line);padding-left:7px;margin-left:2px}
+.chip.hidden{display:none}
+
+.entry{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:8px;
+  padding:11px 14px;margin-bottom:8px;background:var(--panel);font-size:13px;flex-wrap:wrap}
+.entry .when{color:var(--muted);font-size:11px;width:120px;flex:none}
+.entry .desc{flex:1;min-width:160px}
+.entry .desc .win{color:var(--text);font-weight:700}
+.entry .desc .lose{color:var(--muted)}
+.entry .score{font-weight:700;color:var(--text)}
+.entry .winner{font-size:11px;color:#2f8f6f;font-weight:700;width:100%;margin-top:2px}
+.entry .test-badge{font-size:10.5px;color:var(--accent);border:1px solid var(--accent);border-radius:20px;padding:2px 9px;flex:none}
+.mv-up{color:#2f8f6f;font-weight:700}
+.mv-down{color:#c0392b;font-weight:700}
+
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
+#overlay.open{display:flex}
+#modal{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:24px;width:100%;max-width:320px}
+#modal .m-avatar{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:700;color:#0d0f13;margin-bottom:12px}
+#modal h3{margin:0 0 2px;font-size:17px}
+#modal .status{font-size:11px;padding:2px 8px;border-radius:10px;display:inline-block;margin-bottom:14px}
+.status.activo{background:rgba(47,143,111,.2);color:#2f8f6f}
+.status.retirado{background:rgba(130,138,151,.2);color:var(--muted)}
+.m-row{display:flex;justify-content:space-between;font-size:12.5px;padding:6px 0;border-top:1px solid var(--line)}
+.m-row span:first-child{color:var(--muted)}
+#modal .close{float:right;background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px}
+
+@media (max-width:640px){
+  body{flex-direction:column}
+  aside{width:100%;height:auto;position:static;padding:14px 16px}
+  nav{flex-direction:row;flex-wrap:wrap}
+  main{padding:22px 16px 50px}
+  .entry .when{width:auto}
+}
+</style>
+</head>
+<body>
+
+<aside>
+  <div class="brand">8s<span>list</span></div>
+  <nav>
+    <button class="navlink active" data-view="rankings">Rankings</button>
+    <button class="navlink" data-view="matchings">Matchings recientes</button>
+    <button class="navlink" data-view="movimientos">Movimientos</button>
+  </nav>
+  <input id="search" type="text" placeholder="buscar jugador…">
+</aside>
+
+<main>
+  <div class="view active" id="view-rankings">
+    <h2>Tier list — Blazing 8s</h2>
+    <p class="subtitle">Ranking (de amigos para amigos) de jugadores por tier</p>
+    <div id="board"></div>
+  </div>
+
+  <div class="view" id="view-matchings">
+    <h2>Matchings recientes</h2>
+    <p class="subtitle">Últimos enfrentamientos registrados</p>
+    <div id="matches"></div>
+  </div>
+
+  <div class="view" id="view-movimientos">
+    <h2>Movimientos</h2>
+    <p class="subtitle">Promociones y descensos de tier</p>
+    <div id="moves"></div>
+  </div>
+</main>
+
+<div id="overlay"><div id="modal"></div></div>
+
+<script>
+const TIERS = ["HT1","LT1","HT2","LT2","HT3","LT3","HT4","LT4","HT5","LT5","HT6","LT6","UNRANKED"];
+const PFP_DIR = "content/pfp/";
+
+function tierColor(i){
+  if (TIERS[i] === "UNRANKED") return "var(--unranked)";
+  const hue = Math.round(i * (280 / (TIERS.length - 2)));
+  return `hsl(${hue},50%,42%)`;
+}
+
+const AV_PALETTE = ['#c0392b','#c77c1f','#2f8f6f','#3d6fb4','#7d5ba6','#b8a13a'];
+function avatarColor(name){ let h=0; for(const c of name) h=(h*31+c.charCodeAt(0))>>>0; return AV_PALETTE[h%AV_PALETTE.length]; }
+function initials(name){ return name.slice(0,2).toUpperCase(); }
+
+const PLAYERS = {
+  "iChinese":    {tier:"HT1", wins:10, losses:3, peakTier:"HT1", peakPos:1, status:"activo"},
+  "iARROWDEATH": {tier:"LT1", wins:6,  losses:1, peakTier:"LT1", peakPos:2, status:"activo"},
+  "YakixCum":    {tier:"LT2", wins:1,  losses:3, peakTier:"LT2", peakPos:3, status:"activo"},
+  "Deslocked":   {tier:"LT2", wins:1,  losses:4, peakTier:"LT1", peakPos:1, status:"activo"},
+  "ZeroDude":    {tier:"LT4", wins:0,  losses:0, peakTier:"",    peakPos:1, status:"activo"},
+  "RandomKid":   {tier:"UNRANKED", wins:0, losses:0, peakTier:"UNRANKED", peakPos:0, status:"activo"},
+  "pegatina":    {tier:"UNRANKED", wins:0, losses:0, peakTier:"UNRANKED", peakPos:0, status:"retirado"}
+};
+
+function calcELO(w,l){
+  const total = w+l;
+  if (total===0) return 1000;
+  const winrate = w/total;
+  const elo = 1000 + (winrate-0.5)*1600 + Math.log(total+1)*40;
+  return Math.max(0, Math.round(elo));
+}
+Object.values(PLAYERS).forEach(p=>{ p.elo = calcELO(p.wins,p.losses); });
+
+const MATCHES = [
+  {when:"21 sept — 8:28 PM", p1:"iARROWDEATH", p2:"YakixCum", score:"4 - 1"},
+  {when:"21 sept — 8:31 PM", p1:"iARROWDEATH", p2:"Deslocked", score:"4 - 1"},
+  {when:"21 sept — 8:41 PM", p1:"iARROWDEATH", p2:"Deslocked", score:"5 - 2"},
+  {when:"21 sept — 8:49 PM", p1:"iARROWDEATH", p2:"iChinese", score:"4 - 5", test: "HT1"},
+  {when:"21 sept — 9:02 PM", p1:"YakixCum", p2:"Deslocked", score:"4 - 5"},
+  {when:"21 sept — 9:12 PM", p1:"Deslocked", p2:"iARROWDEATH", score:"1 - 5", test: "HT2"},
+  {when:"21 sept — 9:26 PM", p1:"YakixCum", p2:"iARROWDEATH", score:"4 - 7", test: "HT2"},
+  {when:"21 sept — 9:35 PM", p1:"YakixCum", p2:"Deslocked", score:"5 - 4", test: "HT2"},
+];
+
+const MOVES = [
+  {when:"20 sept", name:"YakixCum", from:"LT3", to:"LT2", dir:"up"},
+  {when:"17 sept", name:"pegatina", from:"LT6", to:"UNRANKED", dir:"down"},
+];
+
+function fallbackAvatar(img, name, cls){
+  const div = document.createElement('div');
+  const s = img.width;
+  div.className = cls;
+  div.style.cssText = `width:${s}px;height:${s}px;background:${avatarColor(name)};font-size:${s*0.42}px;display:flex;align-items:center;justify-content:center;color:#0d0f13;font-weight:700;border-radius:50%;flex:none`;
+  div.textContent = initials(name);
+  img.replaceWith(div);
+}
+window.fallbackAvatar = fallbackAvatar;
+
+function avatarHTML(name, size, isModal){
+  const s = size||22;
+  const cls = 'avatar' + (isModal ? ' m-avatar' : '');
+  return `<img src="${PFP_DIR}${name}.webp" width="${s}" height="${s}" class="${cls}"
+    style="border-radius:50%;object-fit:cover;flex:none"
+    onerror="fallbackAvatar(this,'${name}','${cls}')">`;
+}
+
+function renderBoard(){
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  TIERS.forEach((t,i)=>{
+    const row = document.createElement('div');
+    row.className = 'tier-row';
+    const label = document.createElement('div');
+    label.className = 'tier-label';
+    label.style.background = tierColor(i);
+    label.textContent = t;
+    const body = document.createElement('div');
+    body.className = 'tier-body';
+    Object.entries(PLAYERS).filter(([,p])=>p.tier===t).sort((x,y)=>y[1].elo-x[1].elo)
+      .forEach(([name,p])=>{
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        chip.dataset.name = name.toLowerCase();
+        chip.innerHTML = `${avatarHTML(name,22)}<span>${name}</span><span class="rating">${p.elo}</span>`;
+        chip.onclick = ()=>openModal(name);
+        body.appendChild(chip);
+      });
+    row.appendChild(label); row.appendChild(body);
+    board.appendChild(row);
+  });
+}
+
+function renderMatches(){
+  document.getElementById('matches').innerHTML = MATCHES.map(m=>{
+    const [s1,s2] = m.score.split('-').map(n=>parseInt(n.trim(),10));
+    const winner = s1>=s2 ? m.p1 : m.p2;
+    const p1cls = winner===m.p1 ? 'win' : 'lose';
+    const p2cls = winner===m.p2 ? 'win' : 'lose';
+    const badge = m.test ? `<span class="test-badge">Testeo ${m.test}</span>` : '';
+    return `
+    <div class="entry">
+      <span class="when">${m.when}</span>
+      <span class="desc"><span class="${p1cls}">${m.p1}</span> <span style="color:var(--muted)">vs</span> <span class="${p2cls}">${m.p2}</span></span>
+      ${badge}
+      <span class="score">${m.score}</span>
+      <span class="winner">Gano ${winner}!</span>
+    </div>`;
+  }).join('');
+}
+
+function renderMoves(){
+  document.getElementById('moves').innerHTML = MOVES.map(m=>`
+    <div class="entry">
+      <span class="when">${m.when}</span>
+      <span class="desc">${m.name} — ${m.from} → ${m.to}</span>
+      <span class="${m.dir==='up'?'mv-up':'mv-down'}">${m.dir==='up'?'▲ Promovido!':'▼ Descendido'}</span>
+    </div>`).join('');
+}
+
+function openModal(name){
+  const p = PLAYERS[name];
+  document.getElementById('modal').innerHTML = `
+    <button class="close" onclick="closeModal()">✕</button>
+    ${avatarHTML(name,56,true)}
+    <h3>${name}</h3>
+    <span class="status ${p.status}">${p.status}</span>
+    <div class="m-row"><span>Tier actual</span><span>${p.tier}</span></div>
+    <div class="m-row"><span>Peak</span><span>${p.peakTier}${p.peakPos?" — #"+p.peakPos:""}</span></div>
+    <div class="m-row"><span>Record</span><span>${p.wins}W - ${p.losses}L</span></div>
+    <div class="m-row"><span>ELO</span><span>${p.elo}</span></div>
+  `;
+  document.getElementById('overlay').classList.add('open');
+}
+function closeModal(){ document.getElementById('overlay').classList.remove('open'); }
+document.getElementById('overlay').addEventListener('click', e=>{ if(e.target.id==='overlay') closeModal(); });
+
+document.querySelectorAll('.navlink').forEach(btn=>{
+  btn.onclick = ()=>{
+    document.querySelectorAll('.navlink').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-'+btn.dataset.view).classList.add('active');
+  };
+});
+
+document.getElementById('search').addEventListener('input', e=>{
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('hidden', q && !c.dataset.name.includes(q)));
+});
+
+renderBoard(); renderMatches(); renderMoves();
+</script>
+</body>
+</html>
